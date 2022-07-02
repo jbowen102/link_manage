@@ -27,18 +27,23 @@ def replace_link_target(link_path, new_target_path, relative=False):
     # Check path exists.
     if not os.path.lexists(link_path):
         raise Exception("Invalid path specified from link_path.")
-    
+
     # Check link_path is actually a symlink
     elif not os.path.islink(link_path):
         raise Exception("link_path does not refer to a symlink.")
-    
+
     elif not os.path.exists(os.path.realpath(new_target_path)):
         raise Exception("new_target_path is an invalid path.")
-    
+
     old_target_path = os.readlink(link_path)
 
     if relative:
-        link_dir = os.path.dirname(link_path)
+        # Use realpath to resolve all symlinks in each path so they have as much
+        # path in common for relative path use.
+        # This makes the relative path as short as possible and w/ fewer chances
+        # for breaking.
+        link_dir = os.path.realpath(os.path.dirname(link_path))
+        new_target_path = os.path.realpath(new_target_path)
         new_target_path = os.path.relpath(new_target_path, start=link_dir)
 
     os.remove(link_path)
