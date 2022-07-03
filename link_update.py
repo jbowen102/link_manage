@@ -49,4 +49,3 @@ def replace_link_target(link_path, new_target_path, relative=False):
     os.remove(link_path)
     os.symlink(new_target_path, link_path)
     print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
-
