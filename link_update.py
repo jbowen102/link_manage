@@ -23,53 +23,55 @@ def replace_link_target(link_path, new_target_path, relative=False):
     """Replace a link's target with new target path. Set as relative
     link if relative set to True.
     """
-    # Use lexists() instead of exists() because exists() returns False if link exists but is broken.
+    link_realdir = os.path.realpath(os.path.dirname(link_path))
+    link_realpath = os.path.join(link_realdir, os.path.basename(link_path))
+
     # Check path exists.
-    if not os.path.lexists(link_path):
+    # Use lexists() instead of exists() because exists() returns False if link exists but is broken.
+    if not os.path.lexists(link_realpath):
         raise Exception("Invalid path specified from link_path.")
 
     # Check link_path is actually a symlink
-    elif not os.path.islink(link_path):
+    elif not os.path.islink(link_realpath):
         raise Exception("link_path does not refer to a symlink.")
 
     elif not os.path.exists(os.path.realpath(new_target_path)):
         raise Exception("new_target_path is an invalid path.")
 
-    old_target_path = os.readlink(link_path)
+    old_target_path = os.readlink(link_realpath)
 
     if relative:
         # Use realpath to resolve all symlinks in each path so they have as much
         # path in common for relative path use.
         # This makes the relative path as short as possible and w/ fewer chances
         # for breaking.
-        link_dir = os.path.realpath(os.path.dirname(link_path))
         new_target_path = os.path.realpath(new_target_path)
-        new_target_path = os.path.relpath(new_target_path, start=link_dir)
+        new_target_path = os.path.relpath(new_target_path, start=link_realdir)
 
-    os.remove(link_path)
-    os.symlink(new_target_path, link_path)
+    os.remove(link_realpath)
+    os.symlink(new_target_path, link_realpath)
     #                   (src <- dst)
     print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
 
 def list_links_in_dir(dir_path):
     # one level only
-    dir_path = os.path.realpath(dir_path)
+    dir_realpath = os.path.realpath(dir_path)
 
-    if not os.path.exists(dir_path):
+    if not os.path.exists(dir_realpath):
         raise Exception("dir_path not found.")
-    elif not os.path.isdir(dir_path):
+    elif not os.path.isdir(dir_realpath):
         raise Exception("dir_path should be a directory.")
 
-    dir_contents = os.listdir(dir_path)
+    dir_contents = os.listdir(dir_realpath)
     dir_contents.sort()
 
-    print("")
     for item in dir_contents:
         item_path = os.path.join(dir_path, item)
-        if os.path.islink(item_path):
-            link_target = os.readlink(item_path)
-            broken = not os.path.exists(os.path.realpath(item_path))
+        item_realpath = os.path.join(dir_realpath, item)
+        if os.path.islink(item_realpath):
+            link_target = os.readlink(item_realpath)
+            broken = not os.path.exists(os.path.realpath(item_realpath))
             if broken:
                 colorama.init(autoreset=True)
                 print("%s -> " % item_path + colorama.Back.RED + "%s" % link_target)
