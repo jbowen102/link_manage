@@ -7,7 +7,7 @@ then
 fi
 
 if [[ -e "${1}" ]]; then
-  # Not allowed to be broken link because needed calls to realink and realpath will fail.
+  # Not allowed to be broken link because needed calls to readlink and realpath will fail.
 	:
 elif [[ -h "${1}" ]]; then
   echo "Link broken. Replace link target and retry." >&2
@@ -17,7 +17,7 @@ else
   exit 2
 fi
 
-LINK_PATH="${1}"
+LINK_PATH="$(realpath $(dirname ${1}))/$(basename ${1})"
 LINK_TARGET="$(readlink ${1})"
 LINK_TARGET_REALPATH="$(realpath ${1})"
 
