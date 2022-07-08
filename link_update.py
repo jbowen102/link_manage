@@ -67,7 +67,7 @@ def replace_link_target(link_path, new_target_path, relative=False):
         print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
 
-def list_links_in_dir(dir_path):
+def find_links_in_dir(dir_path):
     # one level only
     dir_realpath = os.path.realpath(dir_path)
 
@@ -92,3 +92,16 @@ def list_links_in_dir(dir_path):
                 # https://github.com/tartley/colorama
             else:
                 print("%s -> %s" % (item_path, link_target))
+
+
+def find_links_in_tree(dir_path):
+
+    start_dir = os.path.realpath(dir_path)
+
+    if not os.path.exists(start_dir):
+        raise Exception("dir_path not found.")
+    elif not os.path.isdir(start_dir):
+        raise Exception("dir_path should be a directory.")
+
+    for root_dir, dir_list, file_list in os.walk(start_dir):
+        list_links_in_dir(root_dir)
