@@ -39,6 +39,10 @@ def replace_link_target(link_path, new_target_path, relative=False):
         raise Exception("new_target_path is an invalid path.")
 
     old_target_path = os.readlink(link_realpath)
+    if os.path.exists(old_target_path):
+        broken = False
+    else:
+        broken = True
 
     if relative:
         # Use realpath to resolve all symlinks in each path so they have as much
@@ -51,7 +55,16 @@ def replace_link_target(link_path, new_target_path, relative=False):
     os.remove(link_realpath)
     os.symlink(new_target_path, link_realpath)
     #                   (src <- dst)
-    print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
+    if broken:
+        colorama.init()
+        print("Replaced target path\n\t" + colorama.Back.RED +
+                                    "'%s'" % old_target_path +
+                                    colorama.Style.RESET_ALL + "\nwith\n\t'%s'"
+                                    % new_target_path)
+        # https://www.devdungeon.com/content/colorize-terminal-output-python
+        # https://github.com/tartley/colorama
+    else:
+        print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
 
 def list_links_in_dir(dir_path):
