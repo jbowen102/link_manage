@@ -1,5 +1,6 @@
 import os
 import re
+import colorama
 
 
 # dir path where this script is stored
@@ -18,12 +19,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # https://stackoverflow.com/questions/9793631/creating-a-relative-symlink-in-python-without-using-os-chdir
 
 
-
 def replace_link_target(link_path, new_target_path, relative=False):
     """Replace a link's target with new target path. Set as relative
     link if relative set to True.
     """
-    # Use lexists() instead of exists() because exists() returns False if link exists but is broken).
+    # Use lexists() instead of exists() because exists() returns False if link exists but is broken.
     # Check path exists.
     if not os.path.lexists(link_path):
         raise Exception("Invalid path specified from link_path.")
@@ -50,3 +50,30 @@ def replace_link_target(link_path, new_target_path, relative=False):
     os.symlink(new_target_path, link_path)
     #                   (src <- dst)
     print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
+
+
+def list_links_in_dir(dir_path):
+    # one level only
+    dir_path = os.path.realpath(dir_path)
+
+    if not os.path.exists(dir_path):
+        raise Exception("dir_path not found.")
+    elif not os.path.isdir(dir_path):
+        raise Exception("dir_path should be a directory.")
+
+    dir_contents = os.listdir(dir_path)
+    dir_contents.sort()
+
+    print("")
+    for item in dir_contents:
+        item_path = os.path.join(dir_path, item)
+        if os.path.islink(item_path):
+            link_target = os.readlink(item_path)
+            broken = not os.path.exists(os.path.realpath(item_path))
+            if broken:
+                colorama.init(autoreset=True)
+                print("%s -> " % item_path + colorama.Back.RED + "%s" % link_target)
+                # https://www.devdungeon.com/content/colorize-terminal-output-python
+                # https://github.com/tartley/colorama
+            else:
+                print("%s -> %s" % (item_path, link_target))
