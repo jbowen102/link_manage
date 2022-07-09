@@ -1,5 +1,4 @@
 import os
-import re
 import colorama
 
 
@@ -26,6 +25,8 @@ def replace_link_target(link_path, new_target_path, relative=False):
     link_realdir = os.path.realpath(os.path.dirname(link_path))
     link_realpath = os.path.join(link_realdir, os.path.basename(link_path))
 
+    new_target_realpath = os.path.realpath(os.path.join(link_realdir, new_target_path))
+
     # Check path exists.
     # Use lexists() instead of exists() because exists() returns False if link exists but is broken.
     if not os.path.lexists(link_realpath):
@@ -35,11 +36,13 @@ def replace_link_target(link_path, new_target_path, relative=False):
     elif not os.path.islink(link_realpath):
         raise Exception("link_path does not refer to a symlink.")
 
-    elif not os.path.exists(os.path.realpath(new_target_path)):
+    elif not os.path.exists(new_target_realpath):
         raise Exception("new_target_path is an invalid path.")
 
     old_target_path = os.readlink(link_realpath)
-    if os.path.exists(old_target_path):
+    old_target_realpath = os.path.realpath(os.path.join(link_realdir, old_target_path))
+
+    if os.path.exists(old_target_realpath):
         broken = False
     else:
         broken = True
@@ -49,8 +52,7 @@ def replace_link_target(link_path, new_target_path, relative=False):
         # path in common for relative path use.
         # This makes the relative path as short as possible and w/ fewer chances
         # for breaking.
-        new_target_path = os.path.realpath(new_target_path)
-        new_target_path = os.path.relpath(new_target_path, start=link_realdir)
+        new_target_path = os.path.relpath(new_target_realpath, start=link_realdir)
 
     os.remove(link_realpath)
     os.symlink(new_target_path, link_realpath)
@@ -63,6 +65,9 @@ def replace_link_target(link_path, new_target_path, relative=False):
                                     % new_target_path)
         # https://www.devdungeon.com/content/colorize-terminal-output-python
         # https://github.com/tartley/colorama
+    elif old_target_path == new_target_path:
+        # No replacement needed
+        pass
     else:
         print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
