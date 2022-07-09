@@ -7,56 +7,61 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # https://stackoverflow.com/questions/29768937/return-the-file-path-of-the-file-not-the-current-directory
 
 
-# os.path.islink() test if something is a symlink. False if link doesn't exist. Returns True for broken symlinks
-# os.readlink() # get path string where link points. Works even if link broken.
-# os.path.realpath() # get 'canonical' path to file, eliminating symlinks in path.
-# os.path.exists(os.readlink()) # figure out if link broken.
-# os.path.lexists() # test whether a symlink exists (broken or not)
-# os.symlink(src, dst) # 'Create a symbolic link pointing to src named dst.' allows creation of broken links (bad dest path)
-# os.path.relpath() # get relative path to use w/ os.symlink()
-# https://stackoverflow.com/questions/11068419/how-to-check-if-file-is-a-symlink-in-python
-# https://stackoverflow.com/questions/9793631/creating-a-relative-symlink-in-python-without-using-os-chdir
-
-
-def replace_link_target(link_path, new_target_path, relative=False):
+def replace_link_target(link_path, new_target_path, make_relative=False):
     """Replace a link's target with new target path. Set as relative
-    link if relative set to True.
+    link if relative set to True. Otherwise use new_target_path as entered
+    (rel or abs).
+    If new_target_path is a relative path, it is interpreted as relative to
+    existing link's directory, not working dir.
     """
-    link_realdir = os.path.realpath(os.path.dirname(link_path))
-    link_realpath = os.path.join(link_realdir, os.path.basename(link_path))
-
-    new_target_realpath = os.path.realpath(os.path.join(link_realdir, new_target_path))
-
+    link_abspath = os.path.abspath(link_path)
     # Check path exists.
-    # Use lexists() instead of exists() because exists() returns False if link exists but is broken.
-    if not os.path.lexists(link_realpath):
+    # Use lexists() instead of exists() because exists() returns False if link
+    # exists but is broken.
+    if not os.path.lexists(link_abspath):
         raise Exception("Invalid path specified from link_path.")
 
     # Check link_path is actually a symlink
-    elif not os.path.islink(link_realpath):
+    elif not os.path.islink(link_abspath):
         raise Exception("link_path does not refer to a symlink.")
 
-    elif not os.path.exists(new_target_realpath):
+    # Establish the basis for relative link targets
+    link_realdir = os.path.realpath(os.path.dirname(link_abspath))
+
+    # Determine if new link target is relative
+    if os.path.isabs(new_target_path):
+        new_target_abspath = new_target_path
+    else:
+        new_target_abspath = os.path.abspath(os.path.join(link_realdir,
+                                                            new_target_path))
+    if not os.path.exists(new_target_abspath):
         raise Exception("new_target_path is an invalid path.")
 
-    old_target_path = os.readlink(link_realpath)
-    old_target_realpath = os.path.realpath(os.path.join(link_realdir, old_target_path))
+    old_target_path = os.readlink(link_abspath)
+    # Determine if old link target is relative
+    if os.path.isabs(old_target_path):
+        old_target_abspath = old_target_path
+    else:
+        # Evaluate the absolute path of the link target, based on link dir.
+        old_target_abspath = os.path.abspath(os.path.join(link_realdir,
+                                                            old_target_path))
 
-    if os.path.exists(old_target_realpath):
+    if make_relative:
+        # Use realpath to resolve all symlinks in each path so they have as much
+        # in common for relative path eval.
+        # This makes the relative path as short as possible and w/ fewer chances
+        # for breaking later.
+        new_target_realpath = os.path.realpath(new_target_abspath)
+        new_target_path = os.path.relpath(new_target_realpath, start=link_realdir)
+
+    os.remove(link_abspath)
+    os.symlink(new_target_path, link_abspath) # use new_target_path as entered
+    #                   (src <- dst)
+
+    if os.path.exists(old_target_abspath):
         broken = False
     else:
         broken = True
-
-    if relative:
-        # Use realpath to resolve all symlinks in each path so they have as much
-        # path in common for relative path use.
-        # This makes the relative path as short as possible and w/ fewer chances
-        # for breaking.
-        new_target_path = os.path.relpath(new_target_realpath, start=link_realdir)
-
-    os.remove(link_realpath)
-    os.symlink(new_target_path, link_realpath)
-    #                   (src <- dst)
     if broken:
         colorama.init()
         print("Replaced target path\n\t" + colorama.Back.RED +
@@ -74,19 +79,19 @@ def replace_link_target(link_path, new_target_path, relative=False):
 
 def find_links_in_dir(dir_path, prompt_replace=False, make_rel=False):
     # one level only
-    dir_realpath = os.path.realpath(dir_path)
+    dir_abspath = os.path.realpath(dir_path)
 
-    if not os.path.exists(dir_realpath):
+    if not os.path.exists(dir_abspath):
         raise Exception("dir_path not found.")
-    elif not os.path.isdir(dir_realpath):
+    elif not os.path.isdir(dir_abspath):
         raise Exception("dir_path should be a directory.")
 
-    dir_contents = os.listdir(dir_realpath)
+    dir_contents = os.listdir(dir_abspath)
     dir_contents.sort()
 
     for item in dir_contents:
         item_path = os.path.join(dir_path, item)
-        item_realpath = os.path.join(dir_realpath, item)
+        item_realpath = os.path.join(dir_abspath, item)
         if os.path.islink(item_realpath):
             link_target = os.readlink(item_realpath)
             broken = not os.path.exists(os.path.realpath(item_realpath))
@@ -112,7 +117,8 @@ def find_links_in_dir(dir_path, prompt_replace=False, make_rel=False):
             else:
                 print("%s -> %s" % (item_path, link_target))
                 if make_rel:
-                    replace_link_target(item_realpath, link_target, relative=True)
+                    replace_link_target(item_realpath, link_target,
+                                                            make_relative=True)
 
 
 def find_links_in_tree(dir_path, prompt_replace=False, make_rel=False,
@@ -125,4 +131,5 @@ def find_links_in_tree(dir_path, prompt_replace=False, make_rel=False,
         raise Exception("dir_path should be a directory.")
 
     for root_dir, dir_list, file_list in os.walk(start_dir, followlinks=follow_links):
+        # https://stackoverflow.com/questions/6639394/what-is-the-python-way-to-walk-a-directory-tree
         find_links_in_dir(root_dir, prompt_replace, make_rel)
