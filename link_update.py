@@ -72,7 +72,7 @@ def replace_link_target(link_path, new_target_path, relative=False):
         print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
 
-def find_links_in_dir(dir_path):
+def find_links_in_dir(dir_path, prompt_replace=False, make_rel=False):
     # one level only
     dir_realpath = os.path.realpath(dir_path)
 
@@ -95,12 +95,28 @@ def find_links_in_dir(dir_path):
                 print("%s -> " % item_path + colorama.Back.RED + "%s" % link_target)
                 # https://www.devdungeon.com/content/colorize-terminal-output-python
                 # https://github.com/tartley/colorama
+                if prompt_replace:
+                    if make_rel:
+                        relative = True
+                    else:
+                        relative = False
+                    while True:
+                        new_target_str = input("Enter new target:")
+                        try:
+                            replace_link_target(item_realpath, new_target_str,
+                                                                    relative)
+                        except:
+                            continue
+                        else: # only runs if no exception
+                            break
             else:
                 print("%s -> %s" % (item_path, link_target))
+                if make_rel:
+                    replace_link_target(item_realpath, link_target, relative=True)
 
 
-def find_links_in_tree(dir_path):
-
+def find_links_in_tree(dir_path, prompt_replace=False, make_rel=False,
+                                                            follow_links=False):
     start_dir = os.path.realpath(dir_path)
 
     if not os.path.exists(start_dir):
@@ -108,5 +124,5 @@ def find_links_in_tree(dir_path):
     elif not os.path.isdir(start_dir):
         raise Exception("dir_path should be a directory.")
 
-    for root_dir, dir_list, file_list in os.walk(start_dir):
-        list_links_in_dir(root_dir)
+    for root_dir, dir_list, file_list in os.walk(start_dir, followlinks=follow_links):
+        find_links_in_dir(root_dir, prompt_replace, make_rel)
