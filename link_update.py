@@ -14,7 +14,7 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
     If new_target_path is a relative path, it is interpreted as relative to
     existing link's directory, not working dir.
     """
-    link_abspath = os.path.abspath(link_path)
+    link_abspath = os.path.abspath(os.path.join(os.getcwd(), link_path))
     # Check path exists.
     # Use lexists() instead of exists() because exists() returns False if link
     # exists but is broken.
@@ -26,6 +26,7 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
         raise Exception("link_path does not refer to a symlink.")
 
     # Establish the basis for relative link targets
+    # Symlinks resolved in path.
     link_realdir = os.path.realpath(os.path.dirname(link_abspath))
 
     # Determine if new link target is relative
@@ -77,39 +78,60 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
         print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
 
-def find_links_in_dir(dir_path, prompt_replace=False, make_rel=False):
+def find_links_in_dir(dir_path, spec_target=None, prompt_replace=False,
+                                                                make_rel=False):
+    """Find all symlinks at any level under dir_path. If spec_target (path)
+    specified, only links pointing to spec_target will be found.
+    If prompt_replace is set to True, user will be prompted for a new target
+    when a broken link is encountered.
+    If make_rel is set to True, every link found will be converted to relative.
+    """
     # one level only
-    dir_abspath = os.path.realpath(dir_path)
+    dir_abspath = os.path.abspath(os.path.join(os.getcwd(), dir_path))
 
     if not os.path.exists(dir_abspath):
         raise Exception("dir_path not found.")
     elif not os.path.isdir(dir_abspath):
         raise Exception("dir_path should be a directory.")
 
+    if spec_target:
+        # If target is relative, treat as relative to dir_path
+        if os.path.isabs(spec_target):
+            spec_target_abspath = spec_target
+        else:
+            spec_target_abspath = os.path.abspath(os.path.join(dir_abspath,
+                                                                spec_target))
+        spec_target_realpath = os.path.realpath(spec_target_abspath)
+        # Does not have to exist. May be searching for old location to fix.
+
     dir_contents = os.listdir(dir_abspath)
     dir_contents.sort()
 
     for item in dir_contents:
-        item_path = os.path.join(dir_path, item)
-        item_realpath = os.path.join(dir_abspath, item)
-        if os.path.islink(item_realpath):
-            link_target = os.readlink(item_realpath)
-            broken = not os.path.exists(os.path.realpath(item_realpath))
+        item_path = os.path.join(dir_abspath, item)
+        item_abspath = os.path.abspath(os.path.join(os.getcwd(), item_path))
+        item_realpath = os.path.realpath(item_abspath) # Resolves link if it exists
+
+        if os.path.islink(item_abspath):
+            if spec_target and spec_target_realpath != item_realpath:
+                # Skip if only searching for links pointing to spec_target, and
+                # current link has a different target.
+                # Can't use os.path.samefile() because that requires valid paths.
+                # May be searching for broken links to specific old dests.
+                continue
+            link_target = os.readlink(item_abspath)
+            broken = not os.path.exists(item_realpath)
             if broken:
                 colorama.init(autoreset=True)
                 print("%s -> " % item_path + colorama.Back.RED + "%s" % link_target)
                 # https://www.devdungeon.com/content/colorize-terminal-output-python
                 # https://github.com/tartley/colorama
                 if prompt_replace:
-                    if make_rel:
-                        relative = True
-                    else:
-                        relative = False
                     while True:
                         new_target_str = input("Enter new target:")
                         try:
-                            replace_link_target(item_realpath, new_target_str,
-                                                                    relative)
+                            replace_link_target(item_abspath, new_target_str,
+                                                        make_relative=make_rel)
                         except:
                             continue
                         else: # only runs if no exception
@@ -117,19 +139,20 @@ def find_links_in_dir(dir_path, prompt_replace=False, make_rel=False):
             else:
                 print("%s -> %s" % (item_path, link_target))
                 if make_rel:
-                    replace_link_target(item_realpath, link_target,
+                    replace_link_target(item_abspath, link_target,
                                                             make_relative=True)
 
 
-def find_links_in_tree(dir_path, prompt_replace=False, make_rel=False,
-                                                            follow_links=False):
-    start_dir = os.path.realpath(dir_path)
+def find_links_in_tree(dir_path, spec_target=None, prompt_replace=False,
+                                            make_rel=False, follow_links=False):
+    start_dir = os.path.abspath(os.path.join(os.getcwd(), dir_path))
 
     if not os.path.exists(start_dir):
         raise Exception("dir_path not found.")
     elif not os.path.isdir(start_dir):
         raise Exception("dir_path should be a directory.")
 
-    for root_dir, dir_list, file_list in os.walk(start_dir, followlinks=follow_links):
+    for root_dir, dir_list, file_list in os.walk(start_dir,
+                                                    followlinks=follow_links):
         # https://stackoverflow.com/questions/6639394/what-is-the-python-way-to-walk-a-directory-tree
-        find_links_in_dir(root_dir, prompt_replace, make_rel)
+        find_links_in_dir(root_dir, spec_target, prompt_replace, make_rel)

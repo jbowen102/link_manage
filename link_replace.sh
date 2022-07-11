@@ -2,6 +2,7 @@
 
 # Pass existing (possibly broken) link path first (one to redirect)
 # Second arg is the new target (must resolve)
+# Use optional -r flag before other args to indicate resultant link target should be relative
 
 if [[ $# -lt 2 ]] || [[ $# -gt 3 ]]; then
 	echo "\nExpected between 2 and 3 arguments - optional -r flag, existing link path, and new target path." >&2
@@ -14,7 +15,7 @@ elif [[ $# == 3 ]]; then
     TARGET_PATH="$(realpath ${3})"
     # https://code-maven.com/bash-absolute-path
   else
-  	echo "\nExpected second of three args to be '-r'." >&2
+    echo "\nExpected first of three args to be '-r'." >&2
 	  exit 2
   fi
 else
