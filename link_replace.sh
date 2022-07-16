@@ -50,7 +50,7 @@ fi
 
 SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 # Temporarily switch working directory to script location to call python
-python <<< "import link_manage.link_update as lu ; lu.replace_link_target('${EXISTING_LINK_PATH}', '${TARGET_PATH}', ${RELATIVE})"
+python3 <<< "import link_manage.link_update as lu ; lu.replace_link_target('${EXISTING_LINK_PATH}', '${TARGET_PATH}', ${RELATIVE})"
 # https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script
 PYTHON_RETURN=$? # gets return value of last command executed.
 

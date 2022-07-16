@@ -30,7 +30,11 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
     link_realdir = os.path.realpath(os.path.dirname(link_abspath))
 
     # Determine if new link target is relative
-    if os.path.isabs(new_target_path):
+    if not new_target_path:
+        raise Exception("new_target_path cannot be empty string.")
+        # Without this, abspath() will join empty string to a basepath, which
+        # results in a valid (but unintended) path.
+    elif os.path.isabs(new_target_path):
         new_target_abspath = new_target_path
     else:
         new_target_abspath = os.path.abspath(os.path.join(link_realdir,
