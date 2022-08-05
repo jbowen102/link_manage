@@ -2,6 +2,10 @@ import os
 import colorama
 
 
+class BadTargetError(Exception):
+    pass
+
+
 # dir path where this script is stored
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # https://stackoverflow.com/questions/29768937/return-the-file-path-of-the-file-not-the-current-directory
@@ -31,7 +35,7 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
 
     # Determine if new link target is relative
     if not new_target_path:
-        raise Exception("new_target_path cannot be empty string.")
+        raise BadTargetError("new_target_path cannot be empty string.")
         # Without this, abspath() will join empty string to a basepath, which
         # results in a valid (but unintended) path.
     elif os.path.isabs(new_target_path):
@@ -40,7 +44,7 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
         new_target_abspath = os.path.abspath(os.path.join(link_realdir,
                                                             new_target_path))
     if not os.path.exists(new_target_abspath):
-        raise Exception("new_target_path is an invalid path.")
+        raise BadTargetError("new_target_path is an invalid path.")
 
     old_target_path = os.readlink(link_abspath)
     # Determine if old link target is relative
@@ -135,16 +139,35 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                 print("%s -> " % item_path + colorama.Back.RED + "%s" % link_target)
                 # https://www.devdungeon.com/content/colorize-terminal-output-python
                 # https://github.com/tartley/colorama
-                if prompt_replace:
-                    while True:
+                if replace_broken:
+                    # Try fixing automatically by replacing spaces in target.
+                    # Only replaces spaces in basename, so won't fix case
+                    # where dir in path has had spaces replaced.
+                    if " " in os.path.basename(item_realpath):
+                        target_name_no_spaces = os.path.basename(
+                                                item_realpath).replace(" ", "_")
+                        target_path_no_spaces = os.path.join(
+                                                os.path.dirname(item_realpath),
+                                                        target_name_no_spaces)
+                        if os.path.exists(target_path_no_spaces):
+                            new_target_str = target_path_no_spaces
+                            replace_link_target(item_abspath, new_target_str,
+                                                        make_relative=make_rel)
+                            link_fixed = True
+                        else:
+                            link_fixed = False
+                    else:
+                        link_fixed = False
+
+                    while not link_fixed:
                         new_target_str = input("Enter new target:")
                         try:
                             replace_link_target(item_abspath, new_target_str,
                                                         make_relative=make_rel)
-                        except:
+                        except BadTargetError:
                             continue
                         else: # only runs if no exception
-                            break
+                            link_fixed = True
             else:
                 print("%s -> %s" % (item_path, link_target))
                 if make_rel:
@@ -152,7 +175,7 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                                                             make_relative=True)
 
 
-def find_links_in_tree(dir_path, spec_target=None, prompt_replace=False,
+def find_links_in_tree(dir_path, spec_target=None, replace_broken=False,
                                             make_rel=False, follow_links=False):
     start_dir = os.path.abspath(os.path.join(os.getcwd(), dir_path))
 
@@ -164,4 +187,4 @@ def find_links_in_tree(dir_path, spec_target=None, prompt_replace=False,
     for root_dir, dir_list, file_list in os.walk(start_dir,
                                                     followlinks=follow_links):
         # https://stackoverflow.com/questions/6639394/what-is-the-python-way-to-walk-a-directory-tree
-        find_links_in_dir(root_dir, spec_target, prompt_replace, make_rel)
+        find_links_in_dir(root_dir, spec_target, replace_broken, make_rel)
