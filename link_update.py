@@ -59,14 +59,21 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
         new_target_realpath = os.path.realpath(new_target_abspath)
         new_target_path = os.path.relpath(new_target_realpath, start=link_realdir)
 
-    os.remove(link_abspath)
-    os.symlink(new_target_path, link_abspath) # use new_target_path as entered
-    #                   (src <- dst)
+    if old_target_path == new_target_path:
+        # No replacement needed
+        # print("No replacement done (new target same as old):\n\t'%s'"
+        #                                                     % old_target_path)
+        return
+    else:
+        os.remove(link_abspath)
+        os.symlink(new_target_path, link_abspath) # use new_target_path as entered
+        #                   (src <- dst)
 
     if os.path.exists(old_target_abspath):
         broken = False
     else:
         broken = True
+
     if broken:
         colorama.init()
         print("Replaced target path\n\t" + colorama.Back.RED +
@@ -75,19 +82,17 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
                                     % new_target_path)
         # https://www.devdungeon.com/content/colorize-terminal-output-python
         # https://github.com/tartley/colorama
-    elif old_target_path == new_target_path:
-        # No replacement needed
-        pass
     else:
         print("Replaced target path\n\t'%s'\nwith\n\t'%s'" % (old_target_path, new_target_path))
 
 
-def find_links_in_dir(dir_path, spec_target=None, prompt_replace=False,
+def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                                                                 make_rel=False):
-    """Find all symlinks at any level under dir_path. If spec_target (path)
-    specified, only links pointing to spec_target will be found.
-    If prompt_replace is set to True, user will be prompted for a new target
-    when a broken link is encountered.
+    """Find all symlinks at any level under dir_path.
+    If spec_target (path) specified, only links pointing to spec_target will be found.
+    If replace_broken is set to True, user will be prompted for a new target
+    when a broken link is encountered, unless link can be resolved with simple
+    space-replace operation on target.
     If make_rel is set to True, every link found will be converted to relative.
     """
     # one level only
