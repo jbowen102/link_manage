@@ -26,9 +26,9 @@ SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 # https://code-maven.com/bash-absolute-path
 cd "${SCRIPT_DIR}"
 if [[ "${LINK_TARGET}" == "${LINK_TARGET_REALPATH}" ]]; then
-  ./link_replace -r "${LINK_PATH}" "${LINK_TARGET_REALPATH}"
+  ./link_replace.sh -r "${LINK_PATH}" "${LINK_TARGET_REALPATH}"
 else
-  ./link_replace "${LINK_PATH}" "${LINK_TARGET_REALPATH}"
+  ./link_replace.sh "${LINK_PATH}" "${LINK_TARGET_REALPATH}"
 fi
 REPLACE_LINK_RETURN=$?
 
