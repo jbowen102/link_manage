@@ -92,7 +92,7 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
 
 def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                                                                 make_rel=False):
-    """Find all symlinks at any level under dir_path.
+    """Find all symlinks directly under dir_path.
     If spec_target (path) specified, only links pointing to spec_target will be found.
     If replace_broken is set to True, user will be prompted for a new target
     when a broken link is encountered, unless link can be resolved with simple
@@ -178,6 +178,8 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
 def find_links_in_tree(dir_path, spec_target=None, replace_broken=False,
                                             make_rel=False, follow_links=False):
     start_dir = os.path.abspath(os.path.join(os.getcwd(), dir_path))
+    """Find all symlinks at any level under dir_path.
+    """
 
     if not os.path.exists(start_dir):
         raise Exception("dir_path not found.")
