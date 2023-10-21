@@ -27,7 +27,7 @@ if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]]; then
   fi
 fi
 
-echo "[INTERNET SHORTCUT]" > "${FILEPATH_OUT}"
+echo "[InternetShortcut]" > "${FILEPATH_OUT}"
 if [[ $? != 0 ]]; then
 	printf "\nSomething went wrong with first echo call\n"
 	exit 1
