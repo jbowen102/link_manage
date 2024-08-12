@@ -11,7 +11,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # https://stackoverflow.com/questions/29768937/return-the-file-path-of-the-file-not-the-current-directory
 
 
-def replace_link_target(link_path, new_target_path, make_relative=False):
+def replace_link_target(link_path, new_target_path, make_relative=False, prompt=False):
     """Replace a link's target with new target path. Set as relative
     link if relative set to True. Otherwise use new_target_path as entered
     (rel or abs).
@@ -68,10 +68,22 @@ def replace_link_target(link_path, new_target_path, make_relative=False):
         # print("No replacement done (new target same as old):\n\t'%s'"
         #                                                     % old_target_path)
         return
-    else:
-        os.remove(link_abspath)
-        os.symlink(new_target_path, link_abspath) # use new_target_path as entered
-        #                   (src <- dst)
+
+    # Confirm before making link relative. Sometimes result is unexpected.
+    if prompt:
+        print("Replace target path?\n\t" +
+                                "'%s'" % old_target_path +
+                                "\nwith\n\t" + colorama.Fore.CYAN + "'%s'"
+                                % new_target_path + colorama.Style.RESET_ALL)
+        answer = input("[Y/N]> ")
+        if answer.lower() == "y":
+            pass
+        else:
+            return
+
+    os.remove(link_abspath)
+    os.symlink(new_target_path, link_abspath) # use new_target_path as entered
+    #                   (src <- dst)
 
     if os.path.exists(old_target_abspath):
         broken = False
@@ -172,7 +184,7 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                 print("%s -> %s" % (item_path, link_target))
                 if make_rel:
                     replace_link_target(item_abspath, link_target,
-                                                            make_relative=True)
+                                                make_relative=True, prompt=True)
 
 
 def find_links_in_tree(dir_path, spec_target=None, replace_broken=False,
