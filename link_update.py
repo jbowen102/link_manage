@@ -153,10 +153,6 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                 # https://github.com/tartley/colorama
                 if replace_broken:
                     # Try fixing certain cases automatically
-                    user_home_matches = re.findall(r"^/home/user\d{3}/",
-                                                                  item_realpath)
-                    assert len(user_home_matches) in [0, 1], "Found more than one \
-                            user home match in %s" % os.path.basename(item_realpath)
 
                     # Try fixing by replacing spaces in target filename.
                     # Only replaces spaces in basename, so won't fix case
@@ -174,20 +170,31 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                             link_fixed = True
                         else:
                             link_fixed = False
+                    else:
+                        link_fixed = False
 
                     # Try fixing incorrect username in home dir path.
                     # Check if home subpath is the issue before entering block.
-                    elif user_home_matches and not os.path.isdir(user_home_matches[0]):
+                    user_home_matches = re.findall(r"^/home/user\d{3}/",
+                                                                  item_realpath)
+                    assert len(user_home_matches) in [0, 1], "Found more than one \
+                            user home match in %s" % os.path.basename(item_realpath)
+                    if user_home_matches and not os.path.isdir(user_home_matches[0]):
                         replacement_home_path = "/home/%s/" % os.getlogin()
                         target_path_user_fix = item_realpath.replace(
                                     user_home_matches[0], replacement_home_path)
                         if os.path.exists(target_path_user_fix):
                             new_target_str = target_path_user_fix
-                            input("Replace with this path?:\n\t%s"
-                                "\n[Enter or Ctrl+C] >" % target_path_user_fix)
-                            replace_link_target(item_abspath, new_target_str,
+                            answer = input("Replace with this path?:\n\t%s"
+                                "\n['Y' for yes or 'M' to manual entry]> " % target_path_user_fix)
+                            if answer.upper() == "Y":
+                                replace_link_target(item_abspath, new_target_str,
                                                         make_relative=make_rel)
-                            link_fixed = True
+                                link_fixed = True
+                            else:
+                                # Anything but 'Y' triggers manual path entry
+                                link_fixed = False
+
                         else:
                             link_fixed = False
                     else:
