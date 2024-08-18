@@ -228,7 +228,9 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
 
 
                     while not link_fixed:
-                        new_target_str = input("Enter new target:")
+                        new_target_str = input("Enter new target or 'S' to skip: ")
+                        if new_target_str.upper() == "S":
+                            break
                         try:
                             replace_link_target(item_abspath, new_target_str,
                                                         make_relative=make_rel)
