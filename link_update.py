@@ -1,6 +1,6 @@
 import os
 import colorama
-
+import re
 
 class BadTargetError(Exception):
     pass
@@ -152,7 +152,13 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                 # https://www.devdungeon.com/content/colorize-terminal-output-python
                 # https://github.com/tartley/colorama
                 if replace_broken:
-                    # Try fixing automatically by replacing spaces in target.
+                    # Try fixing certain cases automatically
+                    user_home_matches = re.findall(r"^/home/user\d{3}/",
+                                                                  item_realpath)
+                    assert len(user_home_matches) in [0, 1], "Found more than one \
+                            user home match in %s" % os.path.basename(item_realpath)
+
+                    # Try fixing by replacing spaces in target filename.
                     # Only replaces spaces in basename, so won't fix case
                     # where dir in path has had spaces replaced.
                     if " " in os.path.basename(item_realpath):
@@ -163,6 +169,22 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                                                         target_name_no_spaces)
                         if os.path.exists(target_path_no_spaces):
                             new_target_str = target_path_no_spaces
+                            replace_link_target(item_abspath, new_target_str,
+                                                        make_relative=make_rel)
+                            link_fixed = True
+                        else:
+                            link_fixed = False
+
+                    # Try fixing incorrect username in home dir path.
+                    # Check if home subpath is the issue before entering block.
+                    elif user_home_matches and not os.path.isdir(user_home_matches[0]):
+                        replacement_home_path = "/home/%s/" % os.getlogin()
+                        target_path_user_fix = item_realpath.replace(
+                                    user_home_matches[0], replacement_home_path)
+                        if os.path.exists(target_path_user_fix):
+                            new_target_str = target_path_user_fix
+                            input("Replace with this path?:\n\t%s"
+                                "\n[Enter or Ctrl+C] >" % target_path_user_fix)
                             replace_link_target(item_abspath, new_target_str,
                                                         make_relative=make_rel)
                             link_fixed = True
