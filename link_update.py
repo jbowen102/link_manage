@@ -103,13 +103,15 @@ def replace_link_target(link_path, new_target_path, make_relative=False, prompt=
 
 
 def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
-                                                                make_rel=False):
+                                                make_rel=False, subpath_map=None):
     """Find all symlinks directly under dir_path.
     If spec_target (path) specified, only links pointing to spec_target will be found.
     If replace_broken is set to True, user will be prompted for a new target
     when a broken link is encountered, unless link can be resolved with simple
     space-replace operation on target.
     If make_rel is set to True, every link found will be converted to relative.
+    subpath_map is a one-item dict with key being old_subpath (to replace) and
+    value of new_subpath.
     """
     # one level only
     dir_abspath = os.path.abspath(os.path.join(os.getcwd(), dir_path))
@@ -200,6 +202,31 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
                     else:
                         link_fixed = False
 
+                    # Custom subpath replacement
+                    if subpath_map is not None:
+                        assert len(subpath_map) == 1, "subpath_map arg must be dict w/ only one entry."
+                        old_subpath = list(subpath_map.keys())[0]
+                        new_subpath = subpath_map[old_subpath]
+                        if old_subpath in item_realpath:
+                            target_path_fixed = item_realpath.replace(old_subpath,
+                                                                        new_subpath)
+                            if os.path.exists(target_path_fixed):
+                                new_target_str = target_path_fixed
+                                answer = input("Replace with this path?:\n\t%s"
+                                    "\n['Y' for yes or 'M' to manual entry]> " % target_path_fixed)
+                                if answer.upper() == "Y":
+                                    replace_link_target(item_abspath, new_target_str,
+                                                            make_relative=make_rel)
+                                    link_fixed = True
+                                else:
+                                    # Anything but 'Y' triggers manual path entry
+                                    link_fixed = False
+                            else:
+                                link_fixed = False
+                    else:
+                        link_fixed = False
+
+
                     while not link_fixed:
                         new_target_str = input("Enter new target:")
                         try:
@@ -217,7 +244,7 @@ def find_links_in_dir(dir_path, spec_target=None, replace_broken=False,
 
 
 def find_links_in_tree(dir_path, spec_target=None, replace_broken=False,
-                                            make_rel=False, follow_links=False):
+                        make_rel=False, subpath_map=None, follow_links=False):
     start_dir = os.path.abspath(os.path.join(os.getcwd(), dir_path))
     """Find all symlinks at any level under dir_path.
     """
@@ -230,4 +257,4 @@ def find_links_in_tree(dir_path, spec_target=None, replace_broken=False,
     for root_dir, dir_list, file_list in os.walk(start_dir,
                                                     followlinks=follow_links):
         # https://stackoverflow.com/questions/6639394/what-is-the-python-way-to-walk-a-directory-tree
-        find_links_in_dir(root_dir, spec_target, replace_broken, make_rel)
+        find_links_in_dir(root_dir, spec_target, replace_broken, make_rel, subpath_map)
