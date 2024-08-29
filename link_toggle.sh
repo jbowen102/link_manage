@@ -1,15 +1,15 @@
 #!/bin/bash
 
-if [[ $# -ne 1 ]];
+if [ $# -ne 1 ];
 then
   echo "Expected one argument - symlink to convert to/from relative." >&2
   exit 2
 fi
 
-if [[ -e "${1}" ]]; then
+if [ -e "${1}" ]; then
   # Not allowed to be broken link because needed calls to readlink and realpath will fail.
 	:
-elif [[ -h "${1}" ]]; then
+elif [ -h "${1}" ]; then
   echo "Link broken. Replace link target and retry." >&2
   exit 2
 else
@@ -25,7 +25,7 @@ LINK_TARGET_REALPATH="$(realpath ${1})"
 SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 # https://code-maven.com/bash-absolute-path
 cd "${SCRIPT_DIR}"
-if [[ "${LINK_TARGET}" == "${LINK_TARGET_REALPATH}" ]]; then
+if [ "${LINK_TARGET}" == "${LINK_TARGET_REALPATH}" ]; then
   ./link_replace.sh -r "${LINK_PATH}" "${LINK_TARGET_REALPATH}"
 else
   ./link_replace.sh "${LINK_PATH}" "${LINK_TARGET_REALPATH}"
@@ -34,7 +34,7 @@ REPLACE_LINK_RETURN=$?
 
 cd - > /dev/null # suppress outputs
 
-if [[ ${REPLACE_LINK_RETURN} == 0 ]]; then
+if [ ${REPLACE_LINK_RETURN} == 0 ]; then
 	printf "SUCCESS\n"
 else
   printf "FAIL: Call to link_replace unsuccessful.\n"

@@ -1,15 +1,15 @@
 #!/bin/bash
 
-if [[ $# -ne 1 ]];
+if [ $# -ne 1 ];
 then
   echo "Expected one argument - symlink to convert to relative." >&2
   exit 2
 fi
 
-if [[ -e "${1}" ]]; then
+if [ -e "${1}" ]; then
   # Not allowed to be broken link because needed calls to readlink and realpath will fail.
 	:
-elif [[ -h "${1}" ]]; then
+elif [ -h "${1}" ]; then
   echo "Link broken. Replace link target and retry." >&2
   exit 2
 else
@@ -29,7 +29,7 @@ REPLACE_LINK_RETURN=$?
 
 cd - > /dev/null # suppress outputs
 
-if [[ ${REPLACE_LINK_RETURN} == 0 ]]; then
+if [ ${REPLACE_LINK_RETURN} == 0 ]; then
 	printf "SUCCESS\n"
 else
   printf "FAIL: Call to link_replace unsuccessful.\n"

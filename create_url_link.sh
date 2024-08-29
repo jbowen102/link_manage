@@ -3,7 +3,7 @@
 # pass url as first arg
 # pass filename (w/o extension) as second arg
 
-if [[ $# -ne 2 ]]; then
+if [ $# -ne 2 ]; then
 	echo "Need to pass in two arguments: source URL and name for .url link." >&2
 	exit 2
 fi
@@ -16,7 +16,7 @@ URL_FILENAME="${NAME// /_}.url" # Replace spaces w/ underscores
 FILEPATH_OUT="$(realpath "${PWD}/${URL_FILENAME}")"
 # Check for existence of output file
 # Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
-if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]]; then
+if [ -e "${FILEPATH_OUT}" ] || [ -h "${FILEPATH_OUT}" ]; then
   printf "\nTarget file ${URL_FILENAME} exists. Overwrite? [Y/N]\n"
   read -p ">" answer
   if [ "${answer}" == "y" -o "${answer}" == "Y" ]; then
@@ -28,12 +28,12 @@ if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]]; then
 fi
 
 echo "[InternetShortcut]" > "${FILEPATH_OUT}"
-if [[ $? != 0 ]]; then
+if [ $? != 0 ]; then
 	printf "\nSomething went wrong with first echo call\n"
 	exit 1
 fi
 echo "URL=$URL" >> "${FILEPATH_OUT}"
-if [[ $? != 0 ]]; then
+if [ $? != 0 ]; then
 	printf "\nSomething went wrong with second echo call\n"
 	exit 1
 fi

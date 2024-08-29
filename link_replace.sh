@@ -4,12 +4,12 @@
 # Second arg is the new target (must resolve)
 # Use optional -r flag before other args to indicate resultant link target should be relative
 
-if [[ $# -lt 2 ]] || [[ $# -gt 3 ]]; then
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
 	echo "\nExpected between 2 and 3 arguments - optional -r flag, existing link path, and new target path." >&2
 	exit 2
   # https://stackoverflow.com/questions/18568706/check-number-of-arguments-passed-to-a-bash-script
-elif [[ $# == 3 ]]; then
-  if [[ "${1}" == "-r" ]]; then
+elif [ $# == 3 ]; then
+  if [ "${1}" == "-r" ]; then
     RELATIVE=1
     EXISTING_LINK_PATH="$(realpath $(dirname ${2}))/$(basename ${2})" # might be broken link
     TARGET_PATH="$(realpath ${3})"
@@ -28,13 +28,13 @@ fi
 
 # Validate input paths
 # Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
-if [[ -e "${EXISTING_LINK_PATH}" ]] || [[ -h "${EXISTING_LINK_PATH}" ]]; then
+if [ -e "${EXISTING_LINK_PATH}" ] || [ -h "${EXISTING_LINK_PATH}" ]; then
 	:
 else
   echo "Link path cannot be found." >&2
   exit 2
 fi
-if [[ -e "$(realpath ${TARGET_PATH})" ]]; then
+if [ -e "$(realpath ${TARGET_PATH})" ]; then
   # Use real path or else result will depend on directory user is in when calling script.
   :
 else
@@ -42,7 +42,7 @@ else
   echo "New target path invalid: ${TARGET_PATH}" >&2
   exit 2
 fi
-# if [[ "${TARGET_PATH}" == $(realpath "${EXISTING_LINK_PATH}") ]]; then
+# if [ "${TARGET_PATH}" == $(realpath "${EXISTING_LINK_PATH}") ]; then
 #   echo "Paths lead to same target." >&2
 #   exit 2
 # fi
