@@ -11,8 +11,8 @@ if [ $# -lt 2 ] || [ $# -gt 3 ]; then
 elif [ $# == 3 ]; then
   if [ "${1}" == "-r" ]; then
     RELATIVE=1
-    EXISTING_LINK_PATH="$(realpath $(dirname ${2}))/$(basename ${2})" # might be broken link
-    TARGET_PATH="$(realpath ${3})"
+    EXISTING_LINK_PATH="$(realpath "$(dirname "${2}")")/$(basename "${2}")" # might be broken link
+    TARGET_PATH="$(realpath "${3}")"
     # https://code-maven.com/bash-absolute-path
   else
     echo "\nExpected first of three args to be '-r'." >&2
@@ -20,8 +20,8 @@ elif [ $# == 3 ]; then
   fi
 else
   RELATIVE=0
-  EXISTING_LINK_PATH="$(realpath $(dirname ${1}))/$(basename ${1})" # might be broken link
-  TARGET_PATH="$(realpath ${2})"
+  EXISTING_LINK_PATH="$(realpath "$(dirname "${1}")")/$(basename "${1}")" # might be broken link
+  TARGET_PATH="$(realpath "${2}")"
   # https://code-maven.com/bash-absolute-path
 fi
 
@@ -34,10 +34,8 @@ else
   echo "Link path cannot be found." >&2
   exit 2
 fi
-if [ -e "$(realpath ${TARGET_PATH})" ]; then
+if [ ! -e "$(realpath "$TARGET_PATH")" ]; then
   # Use real path or else result will depend on directory user is in when calling script.
-  :
-else
   # echo "New target path invalid." >&2
   echo "New target path invalid: ${TARGET_PATH}" >&2
   exit 2
